@@ -1,0 +1,36 @@
+# Models (downloaded, large files)
+models/
+
+# IndexTTS (clone separately)
+index-tts/
+
+# Python
+__pycache__/
+*.pyc
+.venv*/
+*.egg-info/
+
+# Raw game files (copyrighted)
+raw/*/voice/
+raw/*/scripts/*.SCX
+raw/*/cn_txt/
+
+# Output (generated)
+output/
+
+# Temporary
+tmp/
+*.tmp
+*.log
+_completed.txt
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MPK archives
+*.mpk
