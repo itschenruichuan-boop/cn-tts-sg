@@ -71,41 +71,92 @@ SG-TTS/
 
 ## 流水线
 
-### 1. 提取游戏资源
+### 1. 解包 MPK → SCX
 ```powershell
 python tools/mpk_tool.py extract raw/sg/voice.mpk raw/sg/voice
 python tools/mpk_tool.py extract raw/sg/script.mpk raw/sg/scripts
 ```
 
-### 2. 构建中文语料库
+### 2. SCX 提取 → TXT（中文台词文本）
+SCX 是二进制脚本文件，需专用工具提取字符串表。
+
+**方法 A：sc3tools（推荐，vendor 内置）**
 ```powershell
-python tools/build_cn_corpus.py
+# 用对应游戏的 charset 提取中文台词
+tools/vendor/sc3tools.exe extract-text raw/sg/scripts/SG00_01.SCX `
+  --charset tools/vendor/sghd_charset.utf8 `
+  --compound-map tools/vendor/sghd_compound_chars.map `
+  --output raw/sg/cn_txt/SG00_01.SCX.txt
+```
+- charset 文件位于 `tools/vendor/`，包含 sge(无印)、sghd(HD版)、sg0(0代) 等多个版本
+- 如果 charset 不匹配会出现乱码，需尝试不同的 charset 文件
+
+**方法 B：scx_dump_strings.py（备选，可能不完美）**
+```powershell
+python tools/scx_dump_strings.py raw/sg/scripts/SG*.SCX `
+  --charset tools/vendor/sghd_charset.utf8 `
+  --out raw/sg/cn_txt/strings.tsv
 ```
 
-### 3. 全量 ASR（日文语音 → 日文文本）
+### 3. 构建中文语料库（TXT → CSV）
 ```powershell
-# 需要 .venv-asr 环境（faster-whisper）
-python tools/asr_voice_batch.py
+python tools/build_cn_corpus.py `
+  --txt-dir raw/sg/cn_txt `
+  --out-csv output/sg/cn_corpus.csv
 ```
 
-### 4. 台词匹配（日文 ASR → 中文台词）
+### 4. 语音分析 + 全量 ASR（日文语音 → 日文文本）
 ```powershell
-# 需要 .venv-match 环境（sentence-transformers）
-python tools/match_asr_to_cn_v3.py
+# 语音清单
+python tools/analyze_voice.py raw/sg/voice `
+  --out output/sg/analysis/voice_inventory.csv `
+  --summary output/sg/analysis/voice_prefix_summary.csv
+
+# 全量 ASR（需要 .venv-asr 环境）
+python tools/asr_voice_batch.py `
+  --voice-dir raw/sg/voice `
+  --out output/sg/asr/asr_full.csv
 ```
 
-### 5. TTS 合成（中文台词 → 中文语音）
+### 5. 台词匹配（日文 ASR → 中文台词）
 ```powershell
-# 需要 IndexTTS2（cd index-tts && uv sync --extra webui）
+# 需要 .venv-match 环境
+python tools/match_asr_to_cn_v3.py `
+  --asr-csv output/sg/asr/asr_full.csv `
+  --corpus-csv output/sg/analysis/cn_corpus.csv `
+  --out output/sg/matches/asr_full_match.csv `
+  --text-type dialogue --script-glob "SG*.SCX" `
+  --prologue-bounds "OKA:26"
+```
+
+### 6. TTS 合成（中文台词 → 中文语音）
+```powershell
+# 需要 IndexTTS2
 cd index-tts
 uv run python ../tools/tts_batch.py
 ```
 
-### 6. 转换 + 打包
+### 7. 转换 + 打包
 ```powershell
 python tools/convert_ogg.py
 python tools/pack_mpk.py
 ```
+
+## 工具清单
+
+| 工具 | 用途 |
+|------|------|
+| `mpk_tool.py` | MPK 解包 |
+| `scx_dump_strings.py` | SCX → 字符串提取（备选） |
+| `build_cn_corpus.py` | TXT → CSV 语料库 |
+| `analyze_voice.py` | OGG 语音清单 |
+| `asr_voice_batch.py` | 全量语音识别 |
+| `asr_voice_sample.py` | 样本语音识别（测试用） |
+| `match_asr_to_cn_v3.py` | 跨语言台词匹配 |
+| `tts_batch.py` | 批量 TTS 合成 |
+| `convert_ogg.py` | WAV → OGG 转换 |
+| `pack_mpk.py` | 重新打包 MPK |
+| `download_hf_mirror.py` | HuggingFace 模型下载 |
 
 ## 环境
 
