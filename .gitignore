@@ -1,22 +1,23 @@
-# Models (downloaded, large files)
-models/
+# Models (only READMEs tracked, actual weights are downloaded separately)
+models/**/*
+!models/**/README.md
 
 # IndexTTS (clone separately)
 index-tts/
+
+# Raw game files (only structure tracked)
+raw/**/*
+!raw/**/.gitkeep
+
+# Output files (only structure tracked)
+output/**/*
+!output/**/.gitkeep
 
 # Python
 __pycache__/
 *.pyc
 .venv*/
 *.egg-info/
-
-# Raw game files (copyrighted)
-raw/*/voice/
-raw/*/scripts/*.SCX
-raw/*/cn_txt/
-
-# Output (generated)
-output/
 
 # Temporary
 tmp/
